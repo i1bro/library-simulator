@@ -22,10 +22,41 @@ class BookController(private val repository: BookRepository) {
     @DeleteMapping("/{id}")
     fun deleteBook(@PathVariable id: Int) = repository.deleteById(id)
 
-    @ResponseBody
+    @GetMapping("/search")
+    fun search(@RequestParam allRequestParams: Map<String, String>): Iterable<Book> {
+        if (allRequestParams.size > 1) {
+            throw IncorrectSearchParametersException()
+        }
+        if (allRequestParams.isEmpty()) {
+            return all()
+        }
+        lateinit var param: String
+        lateinit var value: String
+        allRequestParams.forEach { (t, u) ->
+            param = t
+            value = u
+        }
+        try {
+            return when (param) {
+                "title" -> repository.findAllByTitleContaining(value)
+                "description" -> repository.findAllByDescriptionContaining(value)
+                "author" -> repository.findAllByAuthor(value)
+                "isbn" -> repository.findAllByIsbn(value)
+                "printYear" -> repository.findAllByPrintYear(value.toInt())
+                "readAlready" -> repository.findAllByReadAlready(value.toBooleanStrict())
+                "id" -> repository.findAllById(listOf(value.toInt()))
+                else -> throw IncorrectSearchParametersException()
+            }
+        } catch(ex: IllegalArgumentException) {
+            throw IncorrectSearchParametersException()
+        }
+    }
+
     @ExceptionHandler(BookNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    fun bookNotFoundHandler(ex: BookNotFoundException): String? {
-        return ex.message
-    }
+    fun bookNotFoundHandler(ex: BookNotFoundException): String? = ex.message
+
+    @ExceptionHandler(IncorrectSearchParametersException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun tooManySearchParametersHandler(ex: IncorrectSearchParametersException): String? = ex.message
 }

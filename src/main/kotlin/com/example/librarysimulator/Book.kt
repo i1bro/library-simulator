@@ -14,7 +14,7 @@ data class Book(
     var readAlready: Boolean?,
     @Id @GeneratedValue var id: Int? = null
 ) {
-    public fun update(newBook: Book) {
+    fun update(newBook: Book) {
         for (property in Book::class.memberProperties) {
             if (property.name != "id" && property is KMutableProperty<*>) {
                 if (property.get(newBook) != null) {
